@@ -38,22 +38,27 @@ class Pin
      * @var in|out
      */
     protected $direction;
-
-
+    
+    /**
+     * Base dir for all pin specific files in /sys
+     */
+    protected $sysdir;
+    
     public function __construct($number)
     {
         $this->number = $number;
-
+        $this->sysdir = '/sys/class/gpio/gpio' . $this->number;
+        
         // Enable the GPIO pin
         \file_put_contents('/sys/class/gpio/export', $this->number . "\n");
-
+        
         if (!\is_dir('/sys/class/gpio/gpio' . $this->number)) {
             throw new \RuntimeException('Failed to enable GPIO pin "' . $this->number . '"');
         }
-
+        
         $this->direction = $this->readDirection();
-        $this->fd_value = \fopen('/sys/class/gpio/gpio' . $number . '/value', 'r+');
-        \file_put_contents('/sys/class/gpio/gpio' . $this->number , '/edge', "both\n");
+        $this->fd_value = \fopen($this->sysdir . '/value', 'r+');
+        \file_put_contents($this->sysdir . '/edge', "both\n");
     }
 
     /**
@@ -63,7 +68,7 @@ class Pin
      */
     public function readDirection()
     {
-        $direction = \file_get_contents('/sys/class/gpio/gpio' . $number . '/direction');
+        $direction = \file_get_contents($this->sysdir . '/direction');
         return \trim($direction);
     }
 
@@ -73,7 +78,7 @@ class Pin
             throw new \InvalidArgumentException('GPIO pin direction can only be in or out');
         }
 
-        \file_put_contents('/sys/class/gpio/gpio' . $number . '/direction', $newDirection . "\n");
+        \file_put_contents($this->sysdir . '/direction', $newDirection . "\n");
         $this->direction = $newDirection;
         return $this;
     }
