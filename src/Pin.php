@@ -51,7 +51,6 @@ class Pin
         $this->enable();
         $this->direction = $this->readDirection();
         $this->fd_value = \fopen($this->sysdir . '/value', 'r+');
-        \file_put_contents($this->sysdir . '/edge', "both\n");
     }
 
     /**
@@ -87,7 +86,7 @@ class Pin
     /**
      * Set the value of the GPIO pin (only if in output mode)
      *
-     * @param int $value 1|0
+     * @param bool $value
      * @return \saw\gpio\Pin $this for chaining
      */
     public function setValue($value)
@@ -96,11 +95,13 @@ class Pin
             throw new \RuntimeException('Can not set value of GPIO pin in input mode.');
         }
 
-        if (($value !== 0) && ($value !== 1)) {
+        if (!is_bool($value)) {
             throw new \InvalidArgumentException('GPIO pin value can only be 1 or 0');
         }
 
-        \fwrite($this->fd_value, "$value\n");
+        if (2 !== \fwrite($this->fd_value, ($value ? '1' : '0') . "\n")) {
+            throw new \RuntimeException('Could not write value ' . ($value ? '1' : '0') . ' to gpio port ' . $this->number);
+        }
         \fflush($this->fd_value);
 
         return $this;
@@ -144,5 +145,10 @@ class Pin
         }
 
         return true;
+    }
+    
+    public function __destruct()
+    {
+        $this->disable();
     }
 }
