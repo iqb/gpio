@@ -48,14 +48,7 @@ class Pin
     {
         $this->number = $number;
         $this->sysdir = '/sys/class/gpio/gpio' . $this->number;
-        
-        // Enable the GPIO pin
-        \file_put_contents('/sys/class/gpio/export', $this->number . "\n");
-        
-        if (!\is_dir('/sys/class/gpio/gpio' . $this->number)) {
-            throw new \RuntimeException('Failed to enable GPIO pin "' . $this->number . '"');
-        }
-        
+	$this->enable();
         $this->direction = $this->readDirection();
         $this->fd_value = \fopen($this->sysdir . '/value', 'r+');
         \file_put_contents($this->sysdir . '/edge', "both\n");
@@ -111,5 +104,45 @@ class Pin
         \fflush($this->fd_value);
 
         return $this;
+    }
+    
+    /**
+     * Enable the GPIO pin via sysfs
+     */
+    public function enable()
+    {
+        return $this->changeState(true);
+    }
+    
+    /**
+     * Disable the GPIO pin via sysfs
+     */
+    public function disable()
+    {
+        return $this->changeState(false);
+    }
+    
+    
+    /**
+     * Enable or disable the pin
+     */
+    private function changeState($enable)
+    {
+        // Check if we are already done
+        \clearstatcache();
+        if (\is_dir($this->sysdir) === $enable) {
+            return true;
+        }
+        
+        // Try to change state
+        @\file_put_contents('/sys/class/gpio/' . ($enable ? '' : 'un') . 'export', $this->number . "\n");
+        
+        // Recheck
+        \clearstatcache();
+        if (\is_dir($this->sysdir) !== $enable) {
+            throw new \RuntimeException('Failed to ' . ($enable ? 'enable' : 'disable') . ' GPIO pin "' . $this->number . '"');
+        }
+        
+        return true;
     }
 }
