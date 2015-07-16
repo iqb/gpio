@@ -50,14 +50,14 @@ class LCD
      *
      * @var int
      */
-    protected $delay = 500;
+    protected $delay = 50;
 
     /**
      * Timeout in microseconds to wait until the display received a change to pin E
      *
      * @var int
      */
-    protected $pulse = 500;
+    protected $pulse = 50;
 
 
     public function __construct(Pin $rs, Pin $e, Pin $d4, Pin $d5, Pin $d6, Pin $d7)
