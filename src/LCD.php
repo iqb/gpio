@@ -81,17 +81,17 @@ class LCD
 
         $this->writeByte(0x33, true); // 110011 Initialise
         $this->writeByte(0x32, true); // 110010 Initialise
-        $this->writeByte(0x06, true); // 000110 Cursor move direction
-        $this->writeByte(0x0C, true); // 001100 Display On,Cursor Off, Blink Off
-        $this->writeByte(0x28, true); // 101000 Data length, number of lines, font size
-        $this->writeByte(0x01, true); // 000001 Clear display
-
+        $this->entryMode(true, false);
+        $this->displayOnOffControl(true, false, false);
+        $this->functionSet(false, true, false);
+        $this->clearDisplay();
+        
         usleep($this->delay);
     }
 
     public function writeString($string, $line)
     {
-        $string = str_pad($string, 16);
+        $string = \str_pad($string, 16);
 
         $this->writeByte($line, true);
 
@@ -135,5 +135,111 @@ class LCD
         usleep($this->pulse);
         $this->pinE->setValue(false);
         usleep($this->delay);
+    }
+    
+    /**
+     * Clears the display (overwrites all chars with spaces).
+     * Moves to position 0 and resets shift and cursor position.
+     * 
+     * @return \saw\gpio\LCD $this for chaining
+     */
+    public function clearDisplay()
+    {
+        $this->writeByte(0x01, true);
+        return $this;
+    }
+    
+    /**
+     * Moves to position 0 and resets shift and cursor position.
+     * 
+     * @return \saw\gpio\LCD $this for chaining
+     */
+    public function returnHome()
+    {
+        $this->writeByte(0x02, true);
+        return $this;
+    }
+    
+    /**
+     * Sets cursor move direction and specifies display shift.
+     * These operations are performed during data write and read.
+     */
+    public function entryMode($increment = true, $shift = false)
+    {
+        $byte = 0x04;
+        if ($increment) { $byte |= 0x02; }
+        if ($shift) { $byte |= 0x01; }
+        $this->writeByte($byte, true);
+        return $this;
+    }
+    
+    /**
+     * Control display, cursor and blink
+     * 
+     * @param bool $displayOn
+     * @param bool $cursorOn
+     * @param bool $blinkOn
+     * 
+     * @return \saw\gpio\LCD $this for chaining
+     */
+    public function displayOnOffControl($displayOn = true, $cursorOn = true, $blinkOn = true)
+    {
+        $byte = 0x08;
+        if ($displayOn) { $byte |= 0x04; }
+        if ($cursorOn) { $byte |= 0x02; }
+        if ($blinkOn) { $byte |= 0x01; }
+        $this->writeByte($byte, true);
+        return $this;
+    }
+    
+    /**
+     * Set interface to 8 bit or 4 bit.
+     * Display has 2 lines or not.
+     * Use 5x10 dots font or 5x8 dots font.
+     * 
+     * @param bool $dataLength8Bit
+     * @param bool $twoDisplayLines
+     * @param bool $largeFont
+     * 
+     * @return \saw\gpio\LCD $this for chaining
+     */
+    public function functionSet($dataLength8Bit = true, $twoDisplayLines = true, $largeFont = true)
+    {
+        $byte = 0x20;
+        if ($dataLength8Bit) { $byte |= 0x10; }
+        if ($twoDisplayLines) { $byte |= 0x08; }
+        if ($largeFont) { $byte |= 0x04; }
+        $this->writeByte($byte, true);
+        return $this;
+    }
+    
+    /**
+     * Set the address of the CGROM
+     * 
+     * @param int $address
+     * 
+     * @return \saw\gpio\LCD $this for chaining
+     */
+    public function setCGROMAddress($address)
+    {
+        $byte = 0x40;
+        $byte |= ($address & 0x3F);
+        $this->writeByte($byte, true);
+        return $this;
+    }
+    
+    /**
+     * Set the address of the DDRAM, used for reading and writing
+     * 
+     * @param int $address
+     * 
+     * @return \saw\gpio\LCD $this for chaining
+     */
+    public function setDDRAMAddress($address)
+    {
+        $byte = 0x80;
+        $byte |= ($address & 0x7F);
+        $this->writeByte($byte, true);
+        return $this;
     }
 }
