@@ -1,0 +1,13 @@
+{
+    "name": "iqb/gpio",
+    "description": "GPIO library and test framework",
+    "type": "library",
+    "license": "LGPL-3",
+    "authors": [
+        {
+            "name": "Dennis Birkholz",
+            "email": "dennis@birkholz.biz"
+        }
+    ],
+    "require": {}
+}
