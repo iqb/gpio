@@ -9,5 +9,10 @@
             "email": "dennis@birkholz.biz"
         }
     ],
+    "autoload": {
+        "psr-4": {
+            "iqb\\gpio\\": "src/"
+        }
+    },
     "require": {}
 }
