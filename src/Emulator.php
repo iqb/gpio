@@ -48,7 +48,7 @@ class Emulator
      * Logged actions
      * @var array
      */
-    public $log = [];
+    protected $log = [];
 
     /**
      * Mask of actions to log
@@ -60,7 +60,7 @@ class Emulator
      * List of events that should occur
      * @var array
      */
-    protected $assert;
+    protected $assert = [];
 
     /**
      * Mask of actions that are compared to the list of expected actions
@@ -173,12 +173,11 @@ class Emulator
 
     /**
      * Set the list of expected actions, clearing all previously set actions.
-     * Null disables asserting.
      *
      * @param array $expected
      * @return $this
      */
-    public function assert(array $expected = null)
+    public function assert(array $expected = [])
     {
         $this->assert = $expected;
         return $this;
@@ -261,17 +260,15 @@ class Emulator
             $log = [$gpio, $action, $data];
 
             // Same event as before, duplicate events are ignored
-            if ((\count($this->log) > 0) && ($this->log[\count($this->log)-1] != $log)) {
+            if ((\count($this->log) === 0) || ($this->log[\count($this->log)-1] != $log)) {
                 $this->log[] = $log;
             }
         }
 
-        if (($this->assert !== null) && (($action & $this->assertMask) !== 0)) {
+        if (($action & $this->assertMask) !== 0) {
             if (\count($this->assert) === 0) {
-                if (($this->assertMode & self::ASSERT_IGNORE_MISSING) !== 0) {
-                    $this->assert = null;
-                } else {
-                    throw new \RuntimeException('Unexpected: ' . $this->formatEntry($gpio, $action, $data));
+                if (($this->assertMode & self::ASSERT_IGNORE_MISSING) === 0) {
+                    throw new Exception('Unexpected: ' . $this->formatEntry($gpio, $action, $data));
                 }
             }
 
@@ -279,7 +276,7 @@ class Emulator
                 @list($assert_gpio, $assert_action, $assert_data) = \array_shift($this->assert);
 
                 if (($gpio !== $assert_gpio) || ($action !== $assert_action) || ($data !== $assert_data)) {
-                    throw new \RuntimeException(
+                    throw new Exception(
                         "\nExpected: " . $this->formatEntry($assert_gpio, $assert_action, $assert_data) . "\n"
                         . "Actual:   " . $this->formatEntry($gpio, $action, $data)
                     );
@@ -291,10 +288,17 @@ class Emulator
     public function __destruct()
     {
         if (((($this->assertMode & self::ASSERT_FAIL_EXCESS) !== 0)) && (\count($this->assert) > 0)) {
-            throw new \RuntimeException('Expecting another ' . \count($this->assert) . ' actions.');
+            throw new Exception('Expecting another ' . \count($this->assert) . ' actions.');
         }
     }
 
+    /**
+     * @return array
+     */
+    public function getLog()
+    {
+        return $this->log;
+    }
 
     public function printLog()
     {

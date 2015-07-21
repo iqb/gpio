@@ -105,6 +105,72 @@ class EmulatorTest extends \PHPUnit_Framework_TestCase
         }
     }
 
+    /**
+     * @test
+     */
+    public function testAssert()
+    {
+        $emulator = new Emulator();
+        $emulator->setAssertMask(Emulator::ACTION_CHANGE_VALUE);
 
+        $pin1 = $emulator->createPin(1);
+        $pin1->enable();
+        $pin1->setDirection(Pin::DIRECTION_OUT);
+
+        $emulator->assert([
+            [1, Emulator::ACTION_CHANGE_VALUE, true],
+            [1, Emulator::ACTION_CHANGE_VALUE, false],
+            [1, Emulator::ACTION_CHANGE_VALUE, true],
+        ]);
+
+        $pin1->setValue(true);
+        $pin1->setValue(false);
+        $pin1->setValue(true);
+
+        // Verify ASSERT_IGNORE_MISSING works with empty assert list
+        $emulator->setAssertMode(Emulator::ASSERT_IGNORE_MISSING);
+        $pin1->setValue(true);
+
+        // Verify ASSERT_FAIL_MISSING throws on empty assert list
+        $emulator->setAssertMode(Emulator::ASSERT_FAIL_MISSING);
+
+        try {
+            $pin1->setValue(true);
+            $this->fail('ASSERT_FAIL_MISSING not working!');
+        } catch (Exception $e) {
+        }
+
+        // Fail an assert
+        $emulator->assert([
+            [1, Emulator::ACTION_CHANGE_VALUE, true],
+        ]);
+
+        try {
+            $pin1->setValue(false);
+            $this->fail('Faulty assertion was ignored!');
+        } catch (Exception $e) {
+            $emulator->assert([]);
+        }
+
+        // Verify ASSERT_FAIL_EXCESS throws on remaining expected actions
+        $emulator2 = clone $emulator;
+        $emulator2->setAssertMode(Emulator::ASSERT_FAIL_EXCESS);
+        $emulator2->assert([
+            [1, Emulator::ACTION_CHANGE_VALUE, true],
+        ]);
+
+        try {
+            unset($emulator2);
+            $this->fail('ASSERT_FAIL_EXCESS not working!');
+        } catch (Exception $e) {
+        }
+
+        // Verify ASSERT_IGNORE_EXCESS works
+        $emulator->setAssertMode(Emulator::ASSERT_IGNORE_EXCESS);
+        $emulator->assert([
+            [1, Emulator::ACTION_CHANGE_VALUE, true],
+        ]);
+        unset($emulator);
+    }
 
 }
