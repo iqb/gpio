@@ -90,6 +90,16 @@ class Pin
     }
 
     /**
+     * Get the GPIO number of this pin
+     *
+     * @return int
+     */
+    public function getNumber()
+    {
+        return $this->number;
+    }
+
+    /**
      * Check if the PIN is enabled or not
      *
      * @return bool
