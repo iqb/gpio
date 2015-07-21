@@ -100,6 +100,21 @@ class Pin
     }
 
     /**
+     * Get the file handle for the value file.
+     * You can select() on this file handle in the exceptional array to get notified on changes.
+     * Edge must be set other than none for this to work.
+     *
+     * @return resource
+     */
+    public function getValueHandle()
+    {
+        if (!$this->isEnabled()) {
+            throw new \RuntimeException('GPIO pin is not enabled.');
+        }
+        return $this->handles['value'];
+    }
+
+    /**
      * Read the actual direction of the GPIO pin.
      *
      * @return self::DIRECTION_IN|self::DIRECTION_OUT
