@@ -51,7 +51,7 @@ class PinEmulation extends Pin
         if (isset($this->handleData[$handleName])) {
             return trim($this->handleData[$handleName]);
         } else {
-            throw new \RuntimeException('Can not read from handle "' . $handleName . '"');
+            throw new Exception('Can not read from handle "' . $handleName . '"');
         }
     }
 

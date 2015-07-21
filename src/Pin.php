@@ -109,7 +109,7 @@ class Pin
     public function getValueHandle()
     {
         if (!$this->isEnabled()) {
-            throw new \RuntimeException('GPIO pin is not enabled.');
+            throw new Exception('GPIO pin is not enabled.');
         }
         return $this->handles['value'];
     }
@@ -158,7 +158,7 @@ class Pin
         }
 
         else {
-            throw new \InvalidArgumentException('GPIO pin direction can only be "in" or "out"');
+            throw new Exception('GPIO pin direction can only be "in" or "out"');
         }
 
         $this->writeToHandle('direction', $newDirection . "\n");
@@ -187,11 +187,11 @@ class Pin
     public function setEdge($newEdge)
     {
         if ($this->direction !== self::DIRECTION_IN) {
-            throw new \RuntimeException('Can only set edge of GPIO pin in output mode.');
+            throw new Exception('Can only set edge of GPIO pin in output mode.');
         }
 
         if (($newEdge !== self::EDGE_NONE) && ($newEdge !== self::EDGE_RISING) && ($newEdge !== self::EDGE_FALLING) && ($newEdge !== self::EDGE_BOTH)) {
-            throw new \InvalidArgumentException('GPIO pin edge mode must be one of EDGE_NONE|EDGE_RISING|EDGE_FALLING|EDGE_BOTH');
+            throw new Exception('GPIO pin edge mode must be one of EDGE_NONE|EDGE_RISING|EDGE_FALLING|EDGE_BOTH');
         }
 
         $this->writeToHandle('edge', $newEdge . "\n");
@@ -217,11 +217,11 @@ class Pin
     public function setValue($value)
     {
         if ($this->direction !== 'out') {
-            throw new \RuntimeException('Can not set value of GPIO pin in input mode.');
+            throw new Exception('Can not set value of GPIO pin in input mode.');
         }
 
         if (!is_bool($value)) {
-            throw new \InvalidArgumentException('GPIO pin value can only be 1 or 0');
+            throw new Exception('GPIO pin value can only be 1 or 0');
         }
 
         $this->writeToHandle('value', ($value ? '1' : '0') . "\n");
@@ -270,7 +270,7 @@ class Pin
 
             // Recheck
             if ($this->checkSysDir() !== $enable) {
-                throw new \RuntimeException('Failed to ' . ($enable ? 'enable' : 'disable') . ' GPIO pin "' . $this->number . '"');
+                throw new Exception('Failed to ' . ($enable ? 'enable' : 'disable') . ' GPIO pin "' . $this->number . '"');
             }
         }
 
@@ -306,7 +306,7 @@ class Pin
         }
 
         if (false === ($fh = @\fopen($fileName, 'r+'))) {
-            throw new \RuntimeException('Can not open file "' . $fileName . '", error: ' . \error_get_last()['message']);
+            throw new Exception('Can not open file "' . $fileName . '", error: ' . \error_get_last()['message']);
         }
 
         $this->handles[$handleName] = $fh;
@@ -337,14 +337,14 @@ class Pin
     protected function readFromHandle($handleName, $bytesToRead = 1024)
     {
         if (!isset($this->handles[$handleName]) || !is_resource($this->handles[$handleName])) {
-            throw new \RuntimeException('Invalid handle "' . $handleName . '".');
+            throw new Exception('Invalid handle "' . $handleName . '".');
         }
 
         // Try to seek to the beginning of the file, may be unnecessary
         @\fseek($this->handles[$handleName], 0);
 
         if (false === ($data = @\fread($this->handles[$handleName], $bytesToRead))) {
-            throw new \RuntimeException('Failed to read from handle "' . $handleName . '", error: ' . \error_get_last()['message']);
+            throw new Exception('Failed to read from handle "' . $handleName . '", error: ' . \error_get_last()['message']);
         }
 
         return \trim($data);
@@ -359,15 +359,15 @@ class Pin
     protected function writeToHandle($handleName, $data)
     {
         if (!isset($this->handles[$handleName]) || !is_resource($this->handles[$handleName])) {
-            throw new \RuntimeException('Invalid handle "' . $handleName . '".');
+            throw new Exception('Invalid handle "' . $handleName . '".');
         }
 
         if (false === ($written = @\fwrite($this->handles[$handleName], $data))) {
-            throw new \RuntimeException('Failed to write to handle "' . $handleName . '", error: ' . \error_get_last()['message']);
+            throw new Exception('Failed to write to handle "' . $handleName . '", error: ' . \error_get_last()['message']);
         }
 
         if ($written !== \strlen($data)) {
-            throw new \RuntimeException('Could not write ' . \strlen($data) . ' bytes to handle "' . $handleName . '", only ' . $written . ' bytes written!');
+            throw new Exception('Could not write ' . \strlen($data) . ' bytes to handle "' . $handleName . '", only ' . $written . ' bytes written!');
         }
         \fflush($this->handles[$handleName]);
     }
