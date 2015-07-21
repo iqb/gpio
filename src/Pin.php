@@ -96,7 +96,7 @@ class Pin
      */
     public function isEnabled()
     {
-        return \is_resource($this->handles['value']);
+        return isset($this->handles['value']);
     }
 
     /**
@@ -112,6 +112,16 @@ class Pin
             throw new \RuntimeException('GPIO pin is not enabled.');
         }
         return $this->handles['value'];
+    }
+
+    /**
+     * Get the cached direction of this pin
+     *
+     * @return self::DIRECTION_IN|self::DIRECTION_OUT
+     */
+    public function getDirection()
+    {
+        return $this->direction;
     }
 
     /**
@@ -169,14 +179,14 @@ class Pin
     }
 
     /**
-     * Set the edge of the GPIO pin (only if in output mode)
+     * Set the edge of the GPIO pin (only if in input/reading mode)
      *
      * @param self::EDGE_NONE|self::EDGE_RISING|self::EDGE_FALLING||self::EDGE_BOTH $newEdge
      * @return \iqb\gpio\Pin $this for chaining
      */
     public function setEdge($newEdge)
     {
-        if ($this->direction !== self::DIRECTION_OUT) {
+        if ($this->direction !== self::DIRECTION_IN) {
             throw new \RuntimeException('Can only set edge of GPIO pin in output mode.');
         }
 
