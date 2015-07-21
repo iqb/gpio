@@ -57,18 +57,44 @@ class Emulator
         return new PinEmulation($number, $this);
     }
 
+    /**
+     * Callback called by a PinEmulator to notify the emulator if a file is opened
+     *
+     * @param PinEmulation $pin The caller
+     * @param string $fileHandle
+     */
     public function reportFileOpen(PinEmulation $pin, $fileHandle)
     {
     }
 
+    /**
+     * Callback called by a PinEmulator to notify the emulator if a file is closed
+     *
+     * @param PinEmulation $pin The caller
+     * @param string $fileHandle
+     */
     public function reportFileClose(PinEmulation $pin, $fileHandle)
     {
     }
 
+    /**
+     * Callback called by a PinEmulator to notify the emulator if data is read from a file
+     *
+     * @param PinEmulation $pin The caller
+     * @param string $fileHandle
+     * @param string $value
+     */
     public function reportFileRead(PinEmulation $pin, $fileHandle, $value)
     {
     }
 
+    /**
+     * Callback called by a PinEmulator to notify the emulator if data is written to a file
+     *
+     * @param PinEmulation $pin The caller
+     * @param string $fileHandle
+     * @param string $data
+     */
     public function reportFileWrite(PinEmulation $pin, $fileHandle, $data)
     {
         if (($fileHandle == 'export') && ($data === $pin->getNumber()."\n")) {
@@ -92,6 +118,13 @@ class Emulator
         }
     }
 
+    /**
+     * Write an action to the log and compare it to the expected actions
+     *
+     * @param PinEmulation $pin
+     * @param int $action
+     * @param mixed $data
+     */
     protected function logAction(PinEmulation $pin, $action, $data = null)
     {
         // Ignore unmonitored actions
@@ -129,11 +162,25 @@ class Emulator
         }
     }
 
+    /**
+     * Common format for an action entry
+     *
+     * @param int $gpio
+     * @param int $action
+     * @param mixed $data
+     * @return string
+     */
     protected function formatEntry($gpio, $action, $data)
     {
         return sprintf('GPIO: %2u, action: %-24s', $gpio, $this->resolveConstant($action) . ($data !== null ? ',' : '')) . ($data !== null ? ' data: ' . var_export($data, true) : '');
     }
 
+    /**
+     * Helper method to get the name of a class constant with the supplied value
+     *
+     * @param mixed $constantValue
+     * @return string
+     */
     protected function resolveConstant($constantValue)
     {
         $r = new \ReflectionClass($this);
