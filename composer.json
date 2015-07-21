@@ -14,5 +14,13 @@
             "iqb\\gpio\\": "src/"
         }
     },
-    "require": {}
+    "autoload-dev": {
+        "psr-4": {
+            "iqb\\gpio\\": "tests/"
+        }
+    },
+    "require": {},
+    "require-dev": {
+        "phpunit/phpunit": "4.7.*"
+    }
 }
