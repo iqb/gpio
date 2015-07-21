@@ -175,7 +175,7 @@ class Pin
      */
     public function getEdge()
     {
-        $this->readFromHandle('edge');
+        return $this->readFromHandle('edge');
     }
 
     /**
