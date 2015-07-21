@@ -5,7 +5,7 @@
  * For the license to use this code, see the bundled LICENSE file.
  */
 
-namespace saw\gpio;
+namespace iqb\gpio;
 
 /**
  * Abstraction to write data to HD44780 style 16x2 displays attached via GPIO
@@ -98,7 +98,7 @@ class LCD
      * View the datasheet of the display for valid characters.
      * $line specifies the line to use for multi line displays
      *
-     * @param char[] $string
+     * @param string $string
      * @param int $line
      */
     public function writeString($string, $line = 1)
@@ -152,7 +152,7 @@ class LCD
      * Clears the display (overwrites all chars with spaces).
      * Moves to position 0 and resets shift and cursor position.
      *
-     * @return \saw\gpio\LCD $this for chaining
+     * @return \iqb\gpio\LCD $this for chaining
      */
     public function clearDisplay()
     {
@@ -163,7 +163,7 @@ class LCD
     /**
      * Moves to position 0 and resets shift and cursor position.
      *
-     * @return \saw\gpio\LCD $this for chaining
+     * @return \iqb\gpio\LCD $this for chaining
      */
     public function returnHome()
     {
@@ -191,7 +191,7 @@ class LCD
      * @param bool $cursorOn
      * @param bool $blinkOn
      *
-     * @return \saw\gpio\LCD $this for chaining
+     * @return \iqb\gpio\LCD $this for chaining
      */
     public function displayOnOffControl($displayOn = true, $cursorOn = true, $blinkOn = true)
     {
@@ -212,7 +212,7 @@ class LCD
      * @param bool $twoDisplayLines
      * @param bool $largeFont
      *
-     * @return \saw\gpio\LCD $this for chaining
+     * @return \iqb\gpio\LCD $this for chaining
      */
     public function functionSet($dataLength8Bit = true, $twoDisplayLines = true, $largeFont = true)
     {
@@ -229,7 +229,7 @@ class LCD
      *
      * @param int $address
      *
-     * @return \saw\gpio\LCD $this for chaining
+     * @return \iqb\gpio\LCD $this for chaining
      */
     public function setCGROMAddress($address)
     {
@@ -244,7 +244,7 @@ class LCD
      *
      * @param int $address
      *
-     * @return \saw\gpio\LCD $this for chaining
+     * @return \iqb\gpio\LCD $this for chaining
      */
     public function setDDRAMAddress($address)
     {

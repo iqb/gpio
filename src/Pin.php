@@ -5,7 +5,7 @@
  * For the license to use this code, see the bundled LICENSE file.
  */
 
-namespace saw\gpio;
+namespace iqb\gpio;
 
 /**
  * Represents one GPIO pin
@@ -74,7 +74,7 @@ class Pin
     /**
      * Current (cached) direction of the pin.
      *
-     * @var in|out
+     * @var self::DIRECTION_IN|self::DIRECTION_OUT
      */
     protected $direction;
 
@@ -114,7 +114,7 @@ class Pin
     /**
      * Read the actual direction of the GPIO pin.
      *
-     * @return in|out
+     * @return self::DIRECTION_IN|self::DIRECTION_OUT
      */
     public function readDirection()
     {
@@ -129,8 +129,8 @@ class Pin
     /**
      * Change the direction of the GPIO pin.
      *
-     * @param in|out $newDirection
-     * @return \saw\gpio\Pin
+     * @param self::DIRECTION_IN|self::DIRECTION_OUT $newDirection
+     * @return \iqb\gpio\Pin
      */
     public function setDirection($newDirection)
     {
@@ -183,7 +183,7 @@ class Pin
      * Set the edge of the GPIO pin (only if in output mode)
      *
      * @param self::EDGE_NONE|self::EDGE_RISING|self::EDGE_FALLING||self::EDGE_BOTH $newEdge
-     * @return \saw\gpio\Pin $this for chaining
+     * @return \iqb\gpio\Pin $this for chaining
      */
     public function setEdge($newEdge)
     {
@@ -222,7 +222,7 @@ class Pin
      * Set the value of the GPIO pin (only if in output mode)
      *
      * @param bool $value
-     * @return \saw\gpio\Pin $this for chaining
+     * @return \iqb\gpio\Pin $this for chaining
      */
     public function setValue($value)
     {
@@ -245,7 +245,7 @@ class Pin
     /**
      * Enable the GPIO pin via sysfs
      *
-     * @return \saw\gpio\Pin $this for chaining
+     * @return \iqb\gpio\Pin $this for chaining
      */
     public function enable()
     {
@@ -255,7 +255,7 @@ class Pin
     /**
      * Disable the GPIO pin via sysfs
      *
-     * @return \saw\gpio\Pin $this for chaining
+     * @return \iqb\gpio\Pin $this for chaining
      */
     public function disable()
     {
@@ -266,7 +266,7 @@ class Pin
     /**
      * Enable or disable the pin
      *
-     * @return \saw\gpio\Pin $this for chaining
+     * @return \iqb\gpio\Pin $this for chaining
      */
     private function changeState($enable)
     {
