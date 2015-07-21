@@ -53,25 +53,6 @@ class Pin
     protected $number;
 
     /**
-     * File handle to /sys/class/gpio/gpio$number/direction
-     * @var resource
-     */
-    protected $fd_direction;
-
-    /**
-     * File handle to /sys/class/gpio/gpio$number/edge
-     * @var resource
-     */
-    protected $fd_edge;
-
-    /**
-     * File handle to /sys/class/gpio/gpio$number/value to get/change value
-     * Public so you can use stream_select() on it to check for value changes.
-     * @var resource
-     */
-    public $fd_value;
-
-    /**
      * Current (cached) direction of the pin.
      *
      * @var self::DIRECTION_IN|self::DIRECTION_OUT
@@ -92,6 +73,13 @@ class Pin
     protected $sysdir;
 
     /**
+     * List of file handles required to work the GPIO pin
+     * @var resource[]
+     */
+    protected $handles = [];
+
+
+    /**
      *
      * @param int $number
      */
@@ -108,7 +96,7 @@ class Pin
      */
     public function isEnabled()
     {
-        return \is_resource($this->fd_value);
+        return \is_resource($this->handles['value']);
     }
 
     /**
@@ -118,12 +106,7 @@ class Pin
      */
     public function readDirection()
     {
-        \fseek($this->fd_direction, 0);
-        if (false === ($direction = \fread($this->fd_direction, 32))) {
-            throw new \RuntimeException('Failed to get direction, error: ' . \error_get_last()['message']);
-        }
-
-        return \trim($direction);
+        return $this->readFromHandle('direction');
     }
 
     /**
@@ -153,11 +136,7 @@ class Pin
             throw new \InvalidArgumentException('GPIO pin direction can only be "in" or "out"');
         }
 
-        if ((false === ($written = \fwrite($this->fd_direction, $newDirection . "\n"))) || ($written != (\strlen($newDirection)+1))) {
-            throw new \RuntimeException('Failed to change direction, error: ' . \error_get_last()['message']);
-        }
-
-        \fflush($this->fd_direction);
+        $this->writeToHandle('direction', $newDirection . "\n");
 
         $this->direction = $newDirection;
         return $this;
@@ -171,12 +150,7 @@ class Pin
      */
     public function getEdge()
     {
-        \fseek($this->fd_edge, 0);
-        if (false === ($edge = \fread($this->fd_edge, 32))) {
-            throw new \RuntimeException('Failed to get edge, error: ' . \error_get_last()['message']);
-        }
-
-        return \trim($edge);
+        $this->readFromHandle('edge');
     }
 
     /**
@@ -195,11 +169,7 @@ class Pin
             throw new \InvalidArgumentException('GPIO pin edge mode must be one of EDGE_NONE|EDGE_RISING|EDGE_FALLING|EDGE_BOTH');
         }
 
-        if ((false === ($written = @\fwrite($this->fd_edge, $newEdge . "\n"))) || ($written != (\strlen($newEdge)+1))) {
-            throw new \RuntimeException('Could not change edge to ' . $newEdge . ', error: ' . \error_get_last()['message']);
-        }
-        \fflush($this->fd_edge);
-
+        $this->writeToHandle('edge', $newEdge . "\n");
         return $this;
     }
 
@@ -210,12 +180,7 @@ class Pin
      */
     public function getValue()
     {
-        \fseek($this->fd_value, 0);
-        if (false === ($value = \fread($this->fd_value, 2))) {
-            throw new \RuntimeException('Failed to get value, error: ' . \error_get_last()['message']);
-        }
-
-        return (bool)\trim($value);
+        return ($this->readFromHandle('value') != '0');
     }
 
     /**
@@ -234,11 +199,7 @@ class Pin
             throw new \InvalidArgumentException('GPIO pin value can only be 1 or 0');
         }
 
-        if (2 !== \fwrite($this->fd_value, ($value ? '1' : '0') . "\n")) {
-            throw new \RuntimeException('Could not write value ' . ($value ? '1' : '0') . ' to gpio port ' . $this->number);
-        }
-        \fflush($this->fd_value);
-
+        $this->writeToHandle('value', ($value ? '1' : '0') . "\n");
         return $this;
     }
 
@@ -273,15 +234,15 @@ class Pin
         // Clean up open file handles
         if (!$enable) {
             foreach (['direction', 'edge', 'value'] as $file) {
-                $this->closeFile('fd_' . $file);
+                $this->closeFile($file);
             }
         }
 
         // Check if we are already done
         \clearstatcache();
         if (\is_dir($this->sysdir) !== $enable) {
-            // Try to change state
-            @\file_put_contents($this->sys_gpio_base . '/' . ($enable ? '' : 'un') . 'export', $this->number . "\n");
+            $this->openFile(($enable ? '' : 'un') . 'export', $this->sys_gpio_base . '/' . ($enable ? '' : 'un') . 'export');
+            $this->writeToHandle(($enable ? '' : 'un') . 'export', $this->number . "\n");
         }
 
         // Recheck
@@ -293,7 +254,7 @@ class Pin
         // Open file handles
         if ($enable) {
             foreach (['direction', 'edge', 'value'] as $file) {
-                $this->openFile('fd_' . $file, $this->sysdir . '/' . $file);
+                $this->openFile($file, $this->sysdir . '/' . $file);
             }
         }
 
@@ -303,6 +264,9 @@ class Pin
     public function __destruct()
     {
         $this->disable();
+        foreach ($this->handles as $handle) {
+            @\fclose($handle);
+        }
     }
 
     /**
@@ -314,7 +278,7 @@ class Pin
     protected function openFile($handleName, $fileName)
     {
         // File already opened
-        if (\is_resource($this->{$handleName})) {
+        if (isset($this->handles[$handleName]) && \is_resource($this->handles[$handleName])) {
             return;
         }
 
@@ -322,7 +286,7 @@ class Pin
             throw new \RuntimeException('Can not open file "' . $fileName . '", error: ' . \error_get_last()['message']);
         }
 
-        $this->{$handleName} = $fh;
+        $this->handles[$handleName] = $fh;
     }
 
     /**
@@ -332,11 +296,56 @@ class Pin
      */
     protected function closeFile($handleName)
     {
-        if ($this->{$handleName} === null) {
+        if (!isset($this->handles[$handleName]) || ($this->handles[$handleName] === null)) {
             return;
         }
 
-        @\fclose($this->{$handleName});
-        $this->{$handleName} = null;
+        @\fclose($this->handles[$handleName]);
+        unset($this->handles[$handleName]);
+    }
+
+    /**
+     * Try to read data from the named handle
+     *
+     * @param string $handleName
+     * @param int $bytesToRead
+     * @return string
+     */
+    protected function readFromHandle($handleName, $bytesToRead = 1024)
+    {
+        if (!isset($this->handles[$handleName]) || !is_resource($this->handles[$handleName])) {
+            throw new \RuntimeException('Invalid handle "' . $handleName . '".');
+        }
+
+        // Try to seek to the beginning of the file, may be unnecessary
+        @\fseek($this->handles[$handleName], 0);
+
+        if (false === ($data = @\fread($this->handles[$handleName], $bytesToRead))) {
+            throw new \RuntimeException('Failed to read from handle "' . $handleName . '", error: ' . \error_get_last()['message']);
+        }
+
+        return \trim($data);
+    }
+
+    /**
+     * Try to write data to the named handle
+     *
+     * @param string $handleName
+     * @param string $data
+     */
+    protected function writeToHandle($handleName, $data)
+    {
+        if (!isset($this->handles[$handleName]) || !is_resource($this->handles[$handleName])) {
+            throw new \RuntimeException('Invalid handle "' . $handleName . '".');
+        }
+
+        if (false === ($written = @\fwrite($this->handles[$handleName], $data))) {
+            throw new \RuntimeException('Failed to write to handle "' . $handleName . '", error: ' . \error_get_last()['message']);
+        }
+
+        if ($written !== \strlen($data)) {
+            throw new \RuntimeException('Could not write ' . \strlen($data) . ' bytes to handle "' . $handleName . '", only ' . $written . ' bytes written!');
+        }
+        \fflush($this->handles[$handleName]);
     }
 }
