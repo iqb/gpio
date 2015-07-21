@@ -70,9 +70,10 @@ class Emulator
 
     /**
      * Mode to handle if no further asserts are available
+     * Default allows execution of emulator without expected actions and fails if expected actions remain unfulfilled
      * @var int
      */
-    protected $assertMode = self::ASSERT_FAIL_MISSING|self::ASSERT_FAIL_EXCESS;
+    protected $assertMode = self::ASSERT_IGNORE_MISSING|self::ASSERT_FAIL_EXCESS;
 
 
     /**
