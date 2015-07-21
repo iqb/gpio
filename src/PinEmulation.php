@@ -29,10 +29,6 @@ class PinEmulation extends Pin
     public function __construct($number)
     {
         parent::__construct($number);
-
-        $this->handleData['direction'] = Pin::DIRECTION_IN;
-        $this->handleData['edge'] = Pin::EDGE_NONE;
-        $this->handleData['value'] = '0';
     }
 
 
@@ -59,6 +55,9 @@ class PinEmulation extends Pin
     {
         if (($handleName == 'export') && ($data == $this->number . "\n")) {
             $this->enabled = true;
+            $this->handleData['direction'] = Pin::DIRECTION_IN;
+            $this->handleData['edge'] = Pin::EDGE_NONE;
+            $this->handleData['value'] = '0';
         }
 
         elseif (($handleName == 'unexport') && ($data == $this->number . "\n")) {

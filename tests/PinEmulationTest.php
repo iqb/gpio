@@ -8,7 +8,10 @@
 
 namespace iqb\gpio;
 
-
+/**
+ * @covers \iqb\gpio\Pin
+ * @covers \iqb\gpio\PinEmulation
+ */
 class PinEmulationTest extends \PHPUnit_Framework_TestCase
 {
     /**
@@ -25,6 +28,9 @@ class PinEmulationTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($pin->isEnabled());
     }
 
+    /**
+     *
+     */
     public function testPropertyChanges()
     {
         $pin = new PinEmulation(12);
@@ -80,10 +86,15 @@ class PinEmulationTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * Verify pin must be enabled before value can be read
+     * Verify value getting/setting is handled correctly:
+     * - get/set only if pin is enabled
+     * - set only if in input mode
+     * - set only boolean values
+     * - get returns the same that was set
+     *
      * @test
      */
-    public function testValueRequiresEnabled()
+    public function testValue()
     {
         $pin = new PinEmulation(12);
         $pin->disable();
@@ -92,6 +103,57 @@ class PinEmulationTest extends \PHPUnit_Framework_TestCase
         try {
             $pin->getValue();
             $this->fail('Value must not be readable if pin is disabled.');
+        } catch (Exception $e) {
+        }
+
+        $pin = new PinEmulation(13);
+        $pin->disable();
+        $this->assertFalse($pin->isEnabled());
+
+        try {
+            $pin->setValue(false);
+            $this->fail('Value must not be settable if pin is disabled.');
+        } catch (Exception $e) {
+        }
+
+        $pin = new PinEmulation(14);
+        $pin->enable();
+        $this->assertTrue($pin->isEnabled());
+
+        $pin->setDirection(Pin::DIRECTION_IN);
+        $this->assertSame(Pin::DIRECTION_IN, $pin->getDirection());
+
+        try {
+            $pin->setValue(false);
+            $this->fail('Value must not be settable if pin is in input mode.');
+        } catch (Exception $e) {
+        }
+
+        $pin = new PinEmulation(15);
+        $pin->enable();
+        $this->assertTrue($pin->isEnabled());
+
+        $pin->setDirection(Pin::DIRECTION_OUT);
+        $this->assertSame(Pin::DIRECTION_OUT, $pin->getDirection());
+
+        $pin->setValue(true);
+        $this->assertTrue($pin->getValue());
+
+        $pin->setValue(false);
+        $this->assertFalse($pin->getValue());
+
+        $pin->setValue(true);
+        $this->assertTrue($pin->getValue());
+
+        try {
+            $pin->setValue((int)false);
+            $this->fail('Only boolean values allowed.');
+        } catch (Exception $e) {
+        }
+
+        try {
+            $pin->setValue(null);
+            $this->fail('Only boolean values allowed.');
         } catch (Exception $e) {
         }
     }
