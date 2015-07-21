@@ -76,7 +76,8 @@ This display is connected via 6 GPIO pins.
 namespace iqb\gpio;
 
 // Create the display, the pins are the actual used pins from my personal project
-// You don't need to enable the pins or set the direction, that is done by the LCD class.
+// You don't need to enable the pins or set the direction,
+// that is done by the LCD class.
 $lcd = new LCD(
   new Pin(7),
   new Pin(8),
