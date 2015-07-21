@@ -50,6 +50,40 @@ class EmulatorTest extends \PHPUnit_Framework_TestCase
      *
      * @test
      */
+    public function testAssertModeSetter()
+    {
+        $emulator = new Emulator();
+
+        $emulator->setAssertMode(Emulator::ASSERT_FAIL_MISSING);
+        $emulator->setAssertMode(Emulator::ASSERT_FAIL_EXCESS);
+        $emulator->setAssertMode(Emulator::ASSERT_IGNORE_EXCESS);
+        $this->assertSame(Emulator::ASSERT_FAIL_MISSING, ($emulator->getAssertMode() & Emulator::ASSERT_FAIL_MISSING));
+        $this->assertSame(0, ($emulator->getAssertMode() & Emulator::ASSERT_IGNORE_MISSING));
+
+        $emulator->setAssertMode(Emulator::ASSERT_IGNORE_MISSING);
+        $emulator->setAssertMode(Emulator::ASSERT_FAIL_EXCESS);
+        $emulator->setAssertMode(Emulator::ASSERT_IGNORE_EXCESS);
+        $this->assertSame(Emulator::ASSERT_IGNORE_MISSING, ($emulator->getAssertMode() & Emulator::ASSERT_IGNORE_MISSING));
+        $this->assertSame(0, ($emulator->getAssertMode() & Emulator::ASSERT_FAIL_MISSING));
+
+        $emulator->setAssertMode(Emulator::ASSERT_FAIL_EXCESS);
+        $emulator->setAssertMode(Emulator::ASSERT_FAIL_MISSING);
+        $emulator->setAssertMode(Emulator::ASSERT_IGNORE_MISSING);
+        $this->assertSame(Emulator::ASSERT_FAIL_EXCESS, ($emulator->getAssertMode() & Emulator::ASSERT_FAIL_EXCESS));
+        $this->assertSame(0, ($emulator->getAssertMode() & Emulator::ASSERT_IGNORE_EXCESS));
+
+        $emulator->setAssertMode(Emulator::ASSERT_IGNORE_EXCESS);
+        $emulator->setAssertMode(Emulator::ASSERT_FAIL_MISSING);
+        $emulator->setAssertMode(Emulator::ASSERT_IGNORE_MISSING);
+        $this->assertSame(Emulator::ASSERT_IGNORE_EXCESS, ($emulator->getAssertMode() & Emulator::ASSERT_IGNORE_EXCESS));
+        $this->assertSame(0, ($emulator->getAssertMode() & Emulator::ASSERT_FAIL_EXCESS));
+    }
+
+    /**
+     * Verify all the bitmask action works
+     *
+     * @test
+     */
     public function testLogMaskSetter()
     {
         $emulator = new Emulator();
@@ -70,5 +104,7 @@ class EmulatorTest extends \PHPUnit_Framework_TestCase
             }
         }
     }
+
+
 
 }
