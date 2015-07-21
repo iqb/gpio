@@ -254,16 +254,14 @@ class Pin
         }
 
         // Check if we are already done
-        \clearstatcache();
-        if (\is_dir($this->sysdir) !== $enable) {
+        if ($this->checkSysDir() !== $enable) {
             $this->openFile(($enable ? '' : 'un') . 'export', $this->sys_gpio_base . '/' . ($enable ? '' : 'un') . 'export');
             $this->writeToHandle(($enable ? '' : 'un') . 'export', $this->number . "\n");
-        }
 
-        // Recheck
-        \clearstatcache();
-        if (\is_dir($this->sysdir) !== $enable) {
-            throw new \RuntimeException('Failed to ' . ($enable ? 'enable' : 'disable') . ' GPIO pin "' . $this->number . '"');
+            // Recheck
+            if ($this->checkSysDir() !== $enable) {
+                throw new \RuntimeException('Failed to ' . ($enable ? 'enable' : 'disable') . ' GPIO pin "' . $this->number . '"');
+            }
         }
 
         // Open file handles
@@ -362,5 +360,15 @@ class Pin
             throw new \RuntimeException('Could not write ' . \strlen($data) . ' bytes to handle "' . $handleName . '", only ' . $written . ' bytes written!');
         }
         \fflush($this->handles[$handleName]);
+    }
+
+    /**
+     * Checks if the GPIO pin dir in sys exists or not
+     * @return bool
+     */
+    protected function checkSysDir()
+    {
+        \clearstatcache();
+        return \is_dir($this->sysdir);
     }
 }
