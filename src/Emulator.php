@@ -22,29 +22,58 @@ class Emulator
                                     + self::ACTION_CHANGE_EDGE
                                     + self::ACTION_CHANGE_VALUE;
 
+
     /**
-     * List of events that should occur
-     *
+     * Assert mode: fail if no expected action is left but more actions occur
+     */
+    const ASSERT_FAIL_MISSING       = 1<<0;
+
+    /**
+     * Assert mode: disable asserting if no expected action is left
+     */
+    const ASSERT_IGNORE_MISSING     = 1<<1;
+
+    /**
+     * Assert mode: fail if actions are excepted but are not coming
+     */
+    const ASSERT_FAIL_EXCESS        = 1<<2;
+
+    /**
+     * Assert mode: ignore if some expected actions remain unfulfilled
+     */
+    const ASSERT_IGNORE_EXCESS      = 1<<3;
+
+
+    /**
+     * Logged actions
      * @var array
      */
-    protected $expect;
-
-    /**
-     * Events that will be logged and compared to the expect list
-     *
-     * @var
-     */
-    protected $actions;
-
     public $log = [];
 
     /**
+     * Mask of actions to log
+     * @var int
      */
-    public function __construct(array $expect = null, $actions = self::ACTION_CHANGE_VALUE)
-    {
-        $this->expect = $expect;
-        $this->actions = $actions;
-    }
+    protected $logMask = self::ACTION_ALL;
+
+    /**
+     * List of events that should occur
+     * @var array
+     */
+    protected $assert;
+
+    /**
+     * Mask of actions that are compared to the list of expected actions
+     * @var int
+     */
+    protected $assertMask = self::ACTION_ALL;
+
+    /**
+     * Mode to handle if no further asserts are available
+     * @var int
+     */
+    protected $assertMode = self::ASSERT_FAIL_MISSING|self::ASSERT_FAIL_EXCESS;
+
 
     /**
      * Create a new Pin emulation that reports actions back to this emulator
@@ -55,6 +84,104 @@ class Emulator
     public function createPin($number)
     {
         return new PinEmulation($number, $this);
+    }
+
+    /**
+     * @return int
+     */
+    public function getLogMask()
+    {
+        return $this->logMask;
+    }
+
+    /**
+     * Change the mask of logged actions
+     *
+     * @param int $logMask
+     * @return $this
+     */
+    public function setLogMask($logMask)
+    {
+        $this->logMask = 0;
+        $this->logMask |= ($logMask & self::ACTION_ENABLE);
+        $this->logMask |= ($logMask & self::ACTION_DISABLE);
+        $this->logMask |= ($logMask & self::ACTION_CHANGE_DIRECTION);
+        $this->logMask |= ($logMask & self::ACTION_CHANGE_EDGE);
+        $this->logMask |= ($logMask & self::ACTION_CHANGE_VALUE);
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getAssertMask()
+    {
+        return $this->assertMask;
+    }
+
+    /**
+     * Change the mask of actions compared with the list of expected actions
+     *
+     * @param int $assertMask
+     * @return $this
+     */
+    public function setAssertMask($assertMask)
+    {
+        $this->assertMask = 0;
+        $this->assertMask |= ($assertMask & self::ACTION_ENABLE);
+        $this->assertMask |= ($assertMask & self::ACTION_DISABLE);
+        $this->assertMask |= ($assertMask & self::ACTION_CHANGE_DIRECTION);
+        $this->assertMask |= ($assertMask & self::ACTION_CHANGE_EDGE);
+        $this->assertMask |= ($assertMask & self::ACTION_CHANGE_VALUE);
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getAssertMode()
+    {
+        return $this->assertMode;
+    }
+
+    /**
+     * Change the assert mode
+     *
+     * @param int $assertMode
+     * @return $this
+     */
+    public function setAssertMode($assertMode)
+    {
+        if (($assertMode & self::ASSERT_FAIL_MISSING) !== 0) {
+            $this->assertMode &= ~self::ASSERT_IGNORE_MISSING;
+            $this->assertMode |= self::ASSERT_FAIL_MISSING;
+        } elseif (($assertMode & self::ASSERT_IGNORE_MISSING) !== 0) {
+            $this->assertMode &= ~self::ASSERT_FAIL_MISSING;
+            $this->assertMode |= self::ASSERT_IGNORE_MISSING;
+        }
+
+        if (($assertMode & self::ASSERT_FAIL_EXCESS) !== 0) {
+            $this->assertMode &= ~self::ASSERT_IGNORE_EXCESS;
+            $this->assertMode |= self::ASSERT_FAIL_EXCESS;
+        } elseif (($assertMode & self::ASSERT_IGNORE_EXCESS) !== 0) {
+            $this->assertMode &= ~self::ASSERT_FAIL_EXCESS;
+            $this->assertMode |= self::ASSERT_IGNORE_EXCESS;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Set the list of expected actions, clearing all previously set actions.
+     * Null disables asserting.
+     *
+     * @param array $expected
+     * @return $this
+     */
+    public function assert(array $expected = null)
+    {
+        $this->assert = $expected;
+        return $this;
     }
 
     /**
@@ -127,31 +254,45 @@ class Emulator
      */
     protected function logAction(PinEmulation $pin, $action, $data = null)
     {
-        // Ignore unmonitored actions
-        if (($action & $this->actions) === 0) {
-            return;
-        }
-
         $gpio = $pin->getNumber();
-        $log = [$gpio, $action, $data];
 
-        // Same event as before, duplicate events are ignored
-        if ((\count($this->log) > 0) && ($this->log[\count($this->log)-1] == $log)) {
-            return;
-        }
+        // Log data
+        if (($action & $this->logMask) !== 0) {
+            $log = [$gpio, $action, $data];
 
-        if ($this->expect !== null) {
-            @list($expect_gpio, $expect_action, $expect_data) = \array_shift($this->expect);
-
-            if (($gpio !== $expect_gpio) || ($action !== $expect_action) || ($data !== $expect_data)) {
-                throw new \RuntimeException(
-                    "\nExpected: " . $this->formatEntry($expect_gpio, $expect_action, $expect_data) . "\n"
-                    . "Actual:   " . $this->formatEntry($gpio, $action, $data)
-                );
+            // Same event as before, duplicate events are ignored
+            if ((\count($this->log) > 0) && ($this->log[\count($this->log)-1] != $log)) {
+                $this->log[] = $log;
             }
         }
 
-        $this->log[] = $log;
+        if (($this->assert !== null) && (($action & $this->assertMask) !== 0)) {
+            if (\count($this->assert) === 0) {
+                if (($this->assertMode & self::ASSERT_IGNORE_MISSING) !== 0) {
+                    $this->assert = null;
+                } else {
+                    throw new \RuntimeException('Unexpected: ' . $this->formatEntry($gpio, $action, $data));
+                }
+            }
+
+            else {
+                @list($assert_gpio, $assert_action, $assert_data) = \array_shift($this->assert);
+
+                if (($gpio !== $assert_gpio) || ($action !== $assert_action) || ($data !== $assert_data)) {
+                    throw new \RuntimeException(
+                        "\nExpected: " . $this->formatEntry($assert_gpio, $assert_action, $assert_data) . "\n"
+                        . "Actual:   " . $this->formatEntry($gpio, $action, $data)
+                    );
+                }
+            }
+        }
+    }
+
+    public function __destruct()
+    {
+        if (((($this->assertMode & self::ASSERT_FAIL_EXCESS) !== 0)) && (\count($this->assert) > 0)) {
+            throw new \RuntimeException('Expecting another ' . \count($this->assert) . ' actions.');
+        }
     }
 
 
