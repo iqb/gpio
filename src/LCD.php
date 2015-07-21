@@ -70,14 +70,17 @@ class LCD
         $this->pinD7 = $d7;
     }
 
+    /**
+     * Enable all pins and make the display usable
+     */
     public function initialize()
     {
-        $this->pinRS->setDirection('out');
-        $this->pinE->setDirection('out');
-        $this->pinD4->setDirection('out');
-        $this->pinD5->setDirection('out');
-        $this->pinD6->setDirection('out');
-        $this->pinD7->setDirection('out');
+        $this->pinRS->enable()->setDirection('out');
+        $this->pinE->enable()->setDirection('out');
+        $this->pinD4->enable()->setDirection('out');
+        $this->pinD5->enable()->setDirection('out');
+        $this->pinD6->enable()->setDirection('out');
+        $this->pinD7->enable()->setDirection('out');
 
         $this->writeByte(0x33, true); // 110011 Initialise
         $this->writeByte(0x32, true); // 110010 Initialise
@@ -85,16 +88,24 @@ class LCD
         $this->displayOnOffControl(true, false, false);
         $this->functionSet(false, true, false);
         $this->clearDisplay();
-        
+
         usleep($this->delay);
     }
 
-    public function writeString($string, $line)
+    /**
+     * Write the supplied string to the display.
+     * The string should not exceed 40 characters and the character can not contain multi byte characters (e.g. from utf-8).
+     * View the datasheet of the display for valid characters.
+     * $line specifies the line to use for multi line displays
+     *
+     * @param char[] $string
+     * @param int $line
+     */
+    public function writeString($string, $line = 1)
     {
         $string = \str_pad($string, 16);
 
-        $this->writeByte($line, true);
-
+        $this->setDDRAMAddress(($line-1) * 40);
         for ($i=0; $i<16; $i++) {
             $this->writeByte(\ord($string[$i]));
         }
@@ -136,11 +147,11 @@ class LCD
         $this->pinE->setValue(false);
         usleep($this->delay);
     }
-    
+
     /**
      * Clears the display (overwrites all chars with spaces).
      * Moves to position 0 and resets shift and cursor position.
-     * 
+     *
      * @return \saw\gpio\LCD $this for chaining
      */
     public function clearDisplay()
@@ -148,10 +159,10 @@ class LCD
         $this->writeByte(0x01, true);
         return $this;
     }
-    
+
     /**
      * Moves to position 0 and resets shift and cursor position.
-     * 
+     *
      * @return \saw\gpio\LCD $this for chaining
      */
     public function returnHome()
@@ -159,7 +170,7 @@ class LCD
         $this->writeByte(0x02, true);
         return $this;
     }
-    
+
     /**
      * Sets cursor move direction and specifies display shift.
      * These operations are performed during data write and read.
@@ -172,14 +183,14 @@ class LCD
         $this->writeByte($byte, true);
         return $this;
     }
-    
+
     /**
      * Control display, cursor and blink
-     * 
+     *
      * @param bool $displayOn
      * @param bool $cursorOn
      * @param bool $blinkOn
-     * 
+     *
      * @return \saw\gpio\LCD $this for chaining
      */
     public function displayOnOffControl($displayOn = true, $cursorOn = true, $blinkOn = true)
@@ -191,16 +202,16 @@ class LCD
         $this->writeByte($byte, true);
         return $this;
     }
-    
+
     /**
      * Set interface to 8 bit or 4 bit.
      * Display has 2 lines or not.
      * Use 5x10 dots font or 5x8 dots font.
-     * 
+     *
      * @param bool $dataLength8Bit
      * @param bool $twoDisplayLines
      * @param bool $largeFont
-     * 
+     *
      * @return \saw\gpio\LCD $this for chaining
      */
     public function functionSet($dataLength8Bit = true, $twoDisplayLines = true, $largeFont = true)
@@ -212,12 +223,12 @@ class LCD
         $this->writeByte($byte, true);
         return $this;
     }
-    
+
     /**
      * Set the address of the CGROM
-     * 
+     *
      * @param int $address
-     * 
+     *
      * @return \saw\gpio\LCD $this for chaining
      */
     public function setCGROMAddress($address)
@@ -227,12 +238,12 @@ class LCD
         $this->writeByte($byte, true);
         return $this;
     }
-    
+
     /**
      * Set the address of the DDRAM, used for reading and writing
-     * 
+     *
      * @param int $address
-     * 
+     *
      * @return \saw\gpio\LCD $this for chaining
      */
     public function setDDRAMAddress($address)
