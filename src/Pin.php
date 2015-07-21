@@ -272,12 +272,9 @@ class Pin
     {
         // Clean up open file handles
         if (!$enable) {
-            @\fclose($this->fd_direction);
-            $this->fd_direction = null;
-            @\fclose($this->fd_edge);
-            $this->fd_edge = null;
-            @\fclose($this->fd_value);
-            $this->fd_value = null;
+            foreach (['direction', 'edge', 'value'] as $file) {
+                $this->closeFile('fd_' . $file);
+            }
         }
 
         // Check if we are already done
@@ -295,22 +292,8 @@ class Pin
 
         // Open file handles
         if ($enable) {
-            if (!\is_resource($this->fd_direction)) {
-               if (false === ($this->fd_direction = @\fopen($this->sysdir . '/direction', 'r+'))) {
-                   throw new \RuntimeException('Can not open file ' . $this->sysdir . '/direction' . ', error: ' . \error_get_last()['message']);
-               }
-            }
-
-            if (!\is_resource($this->fd_edge)) {
-               if (false === ($this->fd_edge = @\fopen($this->sysdir . '/edge', 'r+'))) {
-                   throw new \RuntimeException('Can not open file ' . $this->sysdir . '/edge' . ', error: ' . \error_get_last()['message']);
-               }
-            }
-
-            if (!\is_resource($this->fd_value)) {
-               if (false === ($this->fd_value = @\fopen($this->sysdir . '/value', 'r+'))) {
-                   throw new \RuntimeException('Can not open file ' . $this->sysdir . '/value' . ', error: ' . \error_get_last()['message']);
-               }
+            foreach (['direction', 'edge', 'value'] as $file) {
+                $this->openFile('fd_' . $file, $this->sysdir . '/' . $file);
             }
         }
 
@@ -320,5 +303,40 @@ class Pin
     public function __destruct()
     {
         $this->disable();
+    }
+
+    /**
+     * Open a file handle to a sysfs file and store it in the supplied handle name
+     *
+     * @param string $handleName
+     * @param $filename
+     */
+    protected function openFile($handleName, $fileName)
+    {
+        // File already opened
+        if (\is_resource($this->{$handleName})) {
+            return;
+        }
+
+        if (false === ($fh = @\fopen($fileName, 'r+'))) {
+            throw new \RuntimeException('Can not open file "' . $fileName . '", error: ' . \error_get_last()['message']);
+        }
+
+        $this->{$handleName} = $fh;
+    }
+
+    /**
+     * Close a file handle to a sysfs file
+     *
+     * @param string $handleName
+     */
+    protected function closeFile($handleName)
+    {
+        if ($this->{$handleName} === null) {
+            return;
+        }
+
+        @\fclose($this->{$handleName});
+        $this->{$handleName} = null;
     }
 }
