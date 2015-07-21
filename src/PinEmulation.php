@@ -25,28 +25,46 @@ class PinEmulation extends Pin
      */
     protected $enabled = false;
 
+    /**
+     * @var Emulator
+     */
+    protected $emulator;
 
-    public function __construct($number)
+
+    public function __construct($number, Emulator $emulator = null)
     {
         parent::__construct($number);
+        $this->emulator = $emulator;
     }
 
 
     protected function openFile($handleName, $fileName)
     {
         $this->handles[$handleName] = $fileName;
+
+        if ($this->emulator !== null) {
+            $this->emulator->reportFileOpen($this, $handleName);
+        }
     }
 
     protected function closeFile($handleName)
     {
         unset($this->handles[$handleName]);
+        if ($this->emulator !== null) {
+            $this->emulator->reportFileClose($this, $handleName);
+        }
     }
 
     protected function readFromHandle($handleName, $bytesToRead = 1024)
     {
         if (isset($this->handleData[$handleName])) {
+            if ($this->emulator !== null) {
+                $this->emulator->reportFileRead($this, $handleName, $this->handleData[$handleName]);
+            }
             return trim($this->handleData[$handleName]);
-        } else {
+        }
+
+        else {
             throw new Exception('Can not read from handle "' . $handleName . '"');
         }
     }
@@ -66,6 +84,10 @@ class PinEmulation extends Pin
 
         else {
             $this->handleData[$handleName] = $data;
+        }
+
+        if ($this->emulator !== null) {
+            $this->emulator->reportFileWrite($this, $handleName, $data);
         }
     }
 
