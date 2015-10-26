@@ -91,6 +91,20 @@ class LCD
 
         usleep($this->delay);
     }
+    
+    /**
+     * Write strings to the display.
+     * The first string will be on the first line, the following ones will be displayed below.
+     * 
+     * @param ...args $args
+     */
+    public function writeStrings(/*...*/$args)
+    {
+        for($i = 0; $i < \func_num_args(); ++$i)
+        {
+            $this->writeString(\func_get_arg($i), $i+1);
+        }
+    }
 
     /**
      * Write the supplied string to the display.
